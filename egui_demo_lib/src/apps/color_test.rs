@@ -149,6 +149,10 @@ impl ColorTest {
         ui.separator();
 
         pixel_test(ui);
+
+        ui.separator();
+
+        fine_line_test(ui);
     }
 
     fn show_gradients(&mut self, ui: &mut Ui, bg_fill: Color32, (left, right): (Color32, Color32)) {
@@ -357,6 +361,12 @@ impl TextureManager {
 fn pixel_test(ui: &mut Ui) {
     ui.label("Each subsequent square should be one physical pixel larger than the previous. They should be exactly one physical pixel apart. They should be perfectly aligned to the pixel grid.");
 
+    let color = if ui.style().visuals.dark_mode {
+        egui::Color32::WHITE
+    } else {
+        egui::Color32::BLACK
+    };
+
     let pixels_per_point = ui.ctx().pixels_per_point();
     let num_squares: u32 = 8;
     let size_pixels = Vec2::new(
@@ -379,7 +389,47 @@ fn pixel_test(ui: &mut Ui) {
             ),
             Vec2::splat(size as f32) / pixels_per_point,
         );
-        painter.rect_filled(rect_points, 0.0, egui::Color32::WHITE);
+        painter.rect_filled(rect_points, 0.0, color);
         cursor_pixel.x += (1 + size) as f32;
     }
+}
+
+fn fine_line_test(ui: &mut Ui) {
+    ui.label("Some fine lines to show anti-aliasing for testing how smooth the anti-aliasing is:");
+
+    let size = Vec2::new(256.0, 512.0);
+    let (response, painter) = ui.allocate_painter(size, Sense::hover());
+    let rect = response.rect;
+
+    let mut top_half = rect;
+    top_half.set_bottom(top_half.center().y);
+    painter.rect_filled(top_half, 0.0, Color32::BLACK);
+    let top_half = top_half.shrink(10.0);
+    painter.add(egui::epaint::CubicBezierShape::from_points_stroke(
+        [
+            top_half.left_top(),
+            top_half.right_top(),
+            top_half.right_center(),
+            top_half.right_bottom(),
+        ],
+        false,
+        Color32::TRANSPARENT,
+        Stroke::new(1.0, Color32::WHITE),
+    ));
+
+    let mut bottom_half = rect;
+    bottom_half.set_top(bottom_half.center().y);
+    painter.rect_filled(bottom_half, 0.0, Color32::WHITE);
+    let bottom_half = bottom_half.shrink(10.0);
+    painter.add(egui::epaint::CubicBezierShape::from_points_stroke(
+        [
+            bottom_half.left_top(),
+            bottom_half.right_top(),
+            bottom_half.right_center(),
+            bottom_half.right_bottom(),
+        ],
+        false,
+        Color32::TRANSPARENT,
+        Stroke::new(1.0, Color32::BLACK),
+    ));
 }
